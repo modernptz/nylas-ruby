@@ -251,8 +251,22 @@ module Inbox
       exclude_string = exclude_string[0..-2]
     end
 
-    def deltas(cursor, exclude_types=[], expanded_view=false)
-      return enum_for(:deltas, cursor, exclude_types, expanded_view) unless block_given?
+    def _build_include_types(include_types)
+      include_string = "&include_types="
+
+      include_types.each do |value|
+        count = 0
+        if OBJECTS_TABLE.has_value?(value)
+          param_name = OBJECTS_TABLE.key(value)
+          include_string += "#{param_name},"
+        end
+      end
+
+      include_string = include_string[0..-2]
+    end
+
+    def deltas(cursor, exclude_types=[], include_types=[], expanded_view=false)
+      return enum_for(:deltas, cursor, exclude_types, include_types, expanded_view) unless block_given?
 
       exclude_string = ""
 
@@ -260,9 +274,15 @@ module Inbox
         exclude_string = _build_exclude_types(exclude_types)
       end
 
+      include_string = ""
+
+      if include_types.any?
+        include_string = _build_include_types(include_types)
+      end
+      
       # loop and yield deltas until we've come to the end.
       loop do
-        path = self.url_for_path("/delta?exclude_folders=false&cursor=#{cursor}#{exclude_string}")
+        path = self.url_for_path("/delta?exclude_folders=false&cursor=#{cursor}#{exclude_string}#{include_string}")
         if expanded_view
           path += '&view=expanded'
         end
@@ -305,7 +325,7 @@ module Inbox
       end
     end
 
-    def delta_stream(cursor, exclude_types=[], timeout=0, expanded_view=false)
+    def delta_stream(cursor, exclude_types=[], include_types=[], timeout=0, expanded_view=false)
       raise 'Please provide a block for receiving the delta objects' if !block_given?
 
       exclude_string = ""
@@ -314,8 +334,14 @@ module Inbox
         exclude_string = _build_exclude_types(exclude_types)
       end
 
+      include_string = ""
+
+      if include_types.any?
+        include_string = _build_include_types(include_types)
+      end
+      
       # loop and yield deltas indefinitely.
-      path = self.url_for_path("/delta/streaming?exclude_folders=false&cursor=#{cursor}#{exclude_string}")
+      path = self.url_for_path("/delta/streaming?exclude_folders=false&cursor=#{cursor}#{exclude_string}#{include_string}")
       if expanded_view
         path += '&view=expanded'
       end
