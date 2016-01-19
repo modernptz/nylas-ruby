@@ -11,6 +11,7 @@ module Inbox
     parameter :to
     parameter :cc
     parameter :bcc
+    parameter :reply_to
     parameter :date
     parameter :thread_id
     parameter :body
@@ -26,6 +27,7 @@ module Inbox
       @to ||= []
       @cc ||= []
       @bcc ||= []
+      @reply_to ||= []
       @labels ||= []
       @folder ||= nil
 
